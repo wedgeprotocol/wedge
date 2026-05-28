@@ -1,0 +1,31 @@
+[profile.default]
+src = "src"
+out = "out"
+test = "test"
+script = "script"
+libs = ["lib"]
+solc = "0.8.28"
+evm_version = "cancun"
+viaIR = true
+optimizer = true
+optimizer_runs = 20_000
+bytecode_hash = "none"
+cbor_metadata = false
+fs_permissions = [{ access = "read", path = "./"}]
+
+# LP-locker contract is large; lower optimizer runs to keep it under the
+# contract-size limit at the cost of slightly less efficient code.
+[profile.lplocker]
+optimizer_runs = 100
+
+[fmt]
+line_length = 100
+number_underscore = "thousands"
+sort_imports = true
+tab_width = 4
+
+[etherscan]
+base = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=8453", chain = 8453 }
+
+[rpc_endpoints]
+base = "${BASE_RPC_URL}"

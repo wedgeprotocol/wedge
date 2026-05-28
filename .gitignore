@@ -1,0 +1,26 @@
+# Reference repos cloned for research only — not tracked.
+# Contributors should clone these locally to follow file:line citations in docs/.
+references/
+
+# Foundry build artifacts
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/dry-run/
+contracts/coverage/
+contracts/lcov.info
+
+# Foundry env / secrets
+contracts/.env
+.env
+
+# Node / SDK (post-v1)
+node_modules/
+dist/
+.next/
+
+# OS / editor noise
+.DS_Store
+*.swp
+.idea/
+.vscode/
+.claude/
