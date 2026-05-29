@@ -12,7 +12,7 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 ///         If `requiresProtocolToken()` returns true, the Launchpad
 ///         refuses to run the extension while its `PROTOCOL_TOKEN` is
 ///         still the zero address. This prevents bootstrap-order
-///         mistakes (the Protocol Rail extension must not be invoked
+///         mistakes (the Wedge Rail extension must not be invoked
 ///         before the protocol token has been set).
 interface IWedgeExtension {
     error InvalidMsgValue();
