@@ -9,11 +9,16 @@ contract MockPositionManager {
     bytes public lastUnlockData;
     uint256 public lastDeadline;
     uint256 public callCount;
+    uint256 public nextTokenId = 1;
 
     function modifyLiquidities(bytes calldata unlockData, uint256 deadline) external payable {
         lastUnlockData = unlockData;
         lastDeadline = deadline;
         callCount += 1;
+    }
+
+    function setNextTokenId(uint256 id) external {
+        nextTokenId = id;
     }
 
     /// @notice Decode helper used by tests.
