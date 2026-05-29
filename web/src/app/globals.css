@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/*
+ * Wedge palette — locked per docs/07. Single accent, two surface tones max.
+ * No gradients. No glass. No glow. Tabular numerals on prices.
+ */
+:root {
+  --slate: #1a1d22; /* base surface */
+  --slate-raised: #22262c; /* card / hovered surface (the second tone — no third) */
+  --slate-line: #2c3037; /* hairlines, dividers */
+  --warm-white: #f1eee8;
+  --warm-white-dim: #b8b3a8; /* secondary type */
+  --warm-white-muted: #6e6a62; /* tertiary type, captions */
+  --accent: #f5c518; /* warning-yellow — CTAs + wedge mark ONLY */
+  --accent-press: #d6a900;
+}
+
+@theme inline {
+  --color-background: var(--slate);
+  --color-foreground: var(--warm-white);
+  --color-surface: var(--slate-raised);
+  --color-line: var(--slate-line);
+  --color-muted: var(--warm-white-dim);
+  --color-subtle: var(--warm-white-muted);
+  --color-accent: var(--accent);
+  --color-accent-press: var(--accent-press);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+html,
+body {
+  background: var(--slate);
+  color: var(--warm-white);
+  font-family: var(--font-inter), "Inter", system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular numerals everywhere prices appear. */
+.tnum,
+[data-tnum] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Single-line stroke utility for the logomark and inline diagrams. */
+.stroke {
+  stroke: currentColor;
+  stroke-width: 1.5;
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
