@@ -104,6 +104,76 @@ Launchpad can accept `deployToken` calls.
 This script must be run as the `Launchpad.owner()` (the address passed
 as `OWNER` in step 00).
 
+### 05 — Transfer ownership to the Safe multisig
+
+```bash
+export SAFE_MULTISIG=...
+forge script script/05_TransferOwnership.s.sol \
+  --rpc-url $BASE_RPC_URL --private-key $PRIVATE_KEY --broadcast
+```
+
+Rotates `Launchpad.owner()` from the deploy EOA to the configured Safe.
+**One-way** (Ownable's single-step transfer). After this, allowlists,
+treasury changes, and `setDeprecated` all require multisig signatures.
+
+Run only after confirming the Safe is operational and at least one
+signer can produce a valid signature.
+
+### Etherscan verification (per contract)
+
+After all deploy steps, verify each contract on Basescan with
+`forge verify-contract`:
+
+```bash
+export ETHERSCAN_API_KEY=...
+
+# Launchpad
+forge verify-contract $LAUNCHPAD \
+  src/Launchpad.sol:Launchpad \
+  --chain base \
+  --constructor-args $(cast abi-encode "constructor(address)" $OWNER)
+
+# WedgeMevDescendingFees
+forge verify-contract $MEV_MODULE \
+  src/WedgeMevDescendingFees.sol:WedgeMevDescendingFees \
+  --chain base
+
+# WedgeMainlineHook
+forge verify-contract $MAINLINE_HOOK \
+  src/WedgeMainlineHook.sol:WedgeMainlineHook \
+  --chain base \
+  --constructor-args $(cast abi-encode "constructor(address,address)" \
+    $LAUNCHPAD 0x498581fF718922c3f8e6A244956aF099B2652b2b)
+
+# WedgeLpLocker
+forge verify-contract $LP_LOCKER \
+  src/WedgeLpLocker.sol:WedgeLpLocker \
+  --chain base \
+  --constructor-args $(cast abi-encode "constructor(address,address)" \
+    $LAUNCHPAD 0x7C5f5A4bBd8fD63184577525326123B519429bDc)
+
+# WedgeRailLocker
+forge verify-contract $RAIL_LOCKER \
+  src/WedgeRailLocker.sol:WedgeRailLocker \
+  --chain base \
+  --constructor-args $(cast abi-encode "constructor(address,address)" \
+    $LAUNCHPAD 0x7C5f5A4bBd8fD63184577525326123B519429bDc)
+
+# WedgeRailExtension
+forge verify-contract $RAIL_EXTENSION \
+  src/WedgeRailExtension.sol:WedgeRailExtension \
+  --chain base \
+  --constructor-args $(cast abi-encode "constructor(address,address,address,address,address,address)" \
+    $LAUNCHPAD $RAIL_LOCKER \
+    0x4200000000000000000000000000000000000006 \
+    $MAINLINE_HOOK \
+    0x498581fF718922c3f8e6A244956aF099B2652b2b \
+    0x7C5f5A4bBd8fD63184577525326123B519429bDc)
+```
+
+Confirm each verification on `basescan.org/address/<addr>` shows the
+green "Contract" tab before declaring the deploy complete.
+
 ## Sequence summary
 
 | Step | Script | Deploys / Configures |
@@ -113,6 +183,8 @@ as `OWNER` in step 00).
 | 02 | `02_DeployLockers.s.sol` | WedgeLpLocker, WedgeRailLocker |
 | 03 | `03_DeployExtension.s.sol` | WedgeRailExtension + setExtension wiring |
 | 04 | `04_ConfigureAllowlists.s.sol` | Launchpad allowlists + treasury + un-deprecate |
+| 05 | `05_TransferOwnership.s.sol` | Launchpad owner → Safe multisig |
+| verify | `forge verify-contract` per contract | Basescan source verification |
 
 ## Post-deploy
 
@@ -139,8 +211,7 @@ are pinned at the time of writing but Uniswap may revise.
 
 ## What is NOT in this set
 
-- Ownership transfer to a Safe multisig (deferred to a follow-up).
-- Etherscan verification (`forge verify-contract`, deferred).
 - A combined "deploy everything in one tx" script — split into
   steps so each can be re-run independently when an env var is wrong.
-- WEDGE dev-buy script — operational, written closer to launch day.
+- WEDGE launch + `setProtocolToken` script — operational, written
+  closer to launch day with concrete FDV / dev-buy numbers.
