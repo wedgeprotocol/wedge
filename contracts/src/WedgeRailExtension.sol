@@ -18,6 +18,8 @@ import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionMa
 import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
 import {LiquidityAmounts} from "@uniswap/v4-periphery/src/libraries/LiquidityAmounts.sol";
 
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
+
 import {ILaunchpadProtocolToken} from "./interfaces/ILaunchpadProtocolToken.sol";
 import {IWedgeExtension} from "./interfaces/IWedgeExtension.sol";
 
@@ -53,6 +55,9 @@ contract WedgeRailExtension is IWedgeExtension {
     using StateLibrary for IPoolManager;
 
     string public constant PROTOCOL = "Wedge";
+
+    /// @notice Canonical Permit2 address (same on every EVM chain).
+    address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     /// @notice Rail pool LP fee in ppm. 0.30%.
     uint24 public constant RAIL_FEE = 3000;
@@ -159,7 +164,15 @@ contract WedgeRailExtension is IWedgeExtension {
         // Pull TOKEN supply from the Launchpad (already approved in
         // `_triggerExtensions`).
         IERC20(token).safeTransferFrom(LAUNCHPAD, address(this), extensionSupply);
-        IERC20(token).forceApprove(address(POSITION_MANAGER), extensionSupply);
+        // PositionManager pulls via Permit2's AllowanceTransfer.
+        IERC20(token).forceApprove(PERMIT2, type(uint256).max);
+        IAllowanceTransfer(PERMIT2)
+            .approve(
+                token,
+                address(POSITION_MANAGER),
+                uint160(extensionSupply),
+                uint48(block.timestamp + 1 hours)
+            );
 
         uint256 firstTokenId = POSITION_MANAGER.nextTokenId();
         _mintBands(railKey, railStartingTick, token, wedge, extensionSupply);

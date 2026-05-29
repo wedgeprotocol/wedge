@@ -19,6 +19,7 @@ import {IWedgeExtension} from "../src/interfaces/IWedgeExtension.sol";
 
 import {MockERC20} from "./mocks/MockERC20.sol";
 import {MockLaunchpadProtocolToken} from "./mocks/MockLaunchpadProtocolToken.sol";
+import {MockPermit2} from "./mocks/MockPermit2.sol";
 import {MockPoolManager} from "./mocks/MockPoolManager.sol";
 import {MockPositionManager} from "./mocks/MockPositionManager.sol";
 
@@ -46,6 +47,11 @@ contract WedgeRailExtensionTest is Test {
 
         weth = new MockERC20("WETH", "WETH");
         wedge = new MockERC20("WEDGE", "WEDGE");
+
+        // Etch a no-op Permit2 stub at the canonical address so the
+        // extension's IAllowanceTransfer(PERMIT2).approve call
+        // doesn't revert on a non-contract address.
+        vm.etch(address(0x000000000022D473030F116dDEE9F6B43aC78BA3), type(MockPermit2).runtimeCode);
 
         // Deploy the locker first, then the extension, then wire them.
         locker = new WedgeRailLocker(address(launchpad), address(posManager));

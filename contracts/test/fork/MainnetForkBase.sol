@@ -94,7 +94,9 @@ abstract contract MainnetForkBase is Test {
         launchpad.setHook(address(mainlineHook), true);
         launchpad.setMevModule(address(mev), true);
         launchpad.setLocker(address(lpLocker), address(mainlineHook), true);
-        launchpad.setLocker(address(railLocker), address(mainlineHook), true);
+        // Rail locker is NOT allowlisted here — it's a NFT custodian
+        // invoked by the Rail extension, not by the Launchpad's
+        // locker.placeLiquidity path.
         launchpad.setExtension(address(railExt), true);
         launchpad.setDeprecated(false);
         vm.stopPrank();

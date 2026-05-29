@@ -14,6 +14,8 @@ import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionMa
 import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
 import {LiquidityAmounts} from "@uniswap/v4-periphery/src/libraries/LiquidityAmounts.sol";
 
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
+
 import {IWedgeLpLocker} from "./interfaces/IWedgeLpLocker.sol";
 
 /// @notice Locker that custodies the Mainline LP NFTs minted at launch.
@@ -41,6 +43,12 @@ contract WedgeLpLocker is IWedgeLpLocker, IERC721Receiver, ReentrancyGuard {
 
     string public constant PROTOCOL = "Wedge";
     uint256 public constant BPS = 10_000;
+
+    /// @notice Canonical Permit2 address (same on every EVM chain). The
+    ///         v4 PositionManager pulls tokens via Permit2's allowance-
+    ///         transfer pattern, so the locker first approves Permit2
+    ///         then asks Permit2 to authorise the PositionManager.
+    address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     address public immutable LAUNCHPAD;
     IPositionManager public immutable POSITION_MANAGER;
@@ -116,7 +124,15 @@ contract WedgeLpLocker is IWedgeLpLocker, IERC721Receiver, ReentrancyGuard {
         _validateConfig(cfg, startingTick, tickSpacing);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), poolSupply);
-        IERC20(token).forceApprove(address(POSITION_MANAGER), poolSupply);
+        // PositionManager pulls via Permit2's AllowanceTransfer.
+        IERC20(token).forceApprove(PERMIT2, type(uint256).max);
+        IAllowanceTransfer(PERMIT2)
+            .approve(
+                token,
+                address(POSITION_MANAGER),
+                uint160(poolSupply),
+                uint48(block.timestamp + 1 hours)
+            );
 
         bool token0IsLaunched = Currency.unwrap(poolKey.currency0) == token;
         uint256 n = cfg.tickLower.length;
