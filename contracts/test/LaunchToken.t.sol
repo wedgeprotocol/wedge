@@ -32,7 +32,8 @@ contract LaunchTokenTest is Test {
             admin_: admin,
             image_: "ipfs://image",
             metadata_: "{\"description\":\"initial\"}",
-            context_: "context-blob"
+            context_: "context-blob",
+            renounceAtDeploy_: false
         });
     }
 

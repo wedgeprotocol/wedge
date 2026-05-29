@@ -58,10 +58,17 @@ contract LaunchToken is ERC20, ERC20Permit, ERC20Votes, ERC20Burnable {
     /// @param name_     ERC-20 name.
     /// @param symbol_   ERC-20 symbol.
     /// @param maxSupply_ Total supply minted to `msg.sender` (the deployer / Launchpad factory).
-    /// @param admin_    Initial admin. Receives `_admin` and `_originalAdmin`.
+    /// @param admin_    Recorded as `_originalAdmin` immutably. Becomes `_admin` unless
+    ///                  `renounceAtDeploy_` is true, in which case `_admin` is set to
+    ///                  the zero address atomically with construction (no race window).
     /// @param image_    Initial image URL (HTTPS or IPFS).
     /// @param metadata_ Initial metadata blob (free-form, typically JSON).
     /// @param context_  Free-form context string set once at deploy and not updateable.
+    /// @param renounceAtDeploy_ When true, `_admin` is set to address(0) inside the
+    ///                  constructor and an `AdminRenounced(admin_)` event is emitted.
+    ///                  The four admin-gated setters all revert from the first block.
+    ///                  `_originalAdmin` is unaffected, so `verify()` may still be
+    ///                  called by the creator-supplied admin if they choose.
     constructor(
         string memory name_,
         string memory symbol_,
@@ -69,10 +76,16 @@ contract LaunchToken is ERC20, ERC20Permit, ERC20Votes, ERC20Burnable {
         address admin_,
         string memory image_,
         string memory metadata_,
-        string memory context_
+        string memory context_,
+        bool renounceAtDeploy_
     ) ERC20(name_, symbol_) ERC20Permit(name_) {
         _originalAdmin = admin_;
-        _admin = admin_;
+        if (renounceAtDeploy_) {
+            _admin = address(0);
+            emit AdminRenounced(admin_);
+        } else {
+            _admin = admin_;
+        }
         _image = image_;
         _metadata = metadata_;
         _context = context_;
