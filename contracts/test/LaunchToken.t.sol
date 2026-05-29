@@ -282,19 +282,19 @@ contract LaunchTokenTest is Test {
     }
 
     function test_token_has_no_mint_after_construction() public {
-        // Liquid had no public mint either; assert ours has none.
+        // Total supply is fixed in the constructor; no public mint selector exists.
         assertFalse(_selectorPresent(bytes4(keccak256("mint(address,uint256)"))));
         assertFalse(_selectorPresent(bytes4(keccak256("mint(uint256)"))));
     }
 
     function test_token_has_no_inflation_functions() public {
-        // Doppler-style inflation controls — absent.
+        // No inflation controls.
         assertFalse(_selectorPresent(bytes4(keccak256("updateMintRate(uint256)"))));
         assertFalse(_selectorPresent(bytes4(keccak256("mintInflation()"))));
     }
 
     function test_token_has_no_pool_controls() public {
-        // Doppler DERC20 has these — we do not.
+        // The token has no pool-control surface; pools are owned by lockers, not the token.
         assertFalse(_selectorPresent(bytes4(keccak256("lockPool(address)"))));
         assertFalse(_selectorPresent(bytes4(keccak256("unlockPool()"))));
     }

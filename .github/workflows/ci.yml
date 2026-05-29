@@ -28,7 +28,7 @@ jobs:
         run: forge --version
 
       - name: Check formatting
-        run: forge fmt --check
+        run: forge fmt --check src test script
 
       - name: Build
         run: forge build --sizes
