@@ -166,12 +166,13 @@ contract WedgeRailExtension is IWedgeExtension {
         IERC20(token).safeTransferFrom(LAUNCHPAD, address(this), extensionSupply);
         // PositionManager pulls via Permit2's AllowanceTransfer.
         IERC20(token).forceApprove(PERMIT2, type(uint256).max);
-        IAllowanceTransfer(PERMIT2).approve(
-            token,
-            address(POSITION_MANAGER),
-            uint160(extensionSupply),
-            uint48(block.timestamp + 1 hours)
-        );
+        IAllowanceTransfer(PERMIT2)
+            .approve(
+                token,
+                address(POSITION_MANAGER),
+                uint160(extensionSupply),
+                uint48(block.timestamp + 1 hours)
+            );
 
         uint256 firstTokenId = POSITION_MANAGER.nextTokenId();
         _mintBands(railKey, railStartingTick, token, wedge, extensionSupply);

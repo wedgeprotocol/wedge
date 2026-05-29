@@ -126,9 +126,13 @@ contract WedgeLpLocker is IWedgeLpLocker, IERC721Receiver, ReentrancyGuard {
         IERC20(token).safeTransferFrom(msg.sender, address(this), poolSupply);
         // PositionManager pulls via Permit2's AllowanceTransfer.
         IERC20(token).forceApprove(PERMIT2, type(uint256).max);
-        IAllowanceTransfer(PERMIT2).approve(
-            token, address(POSITION_MANAGER), uint160(poolSupply), uint48(block.timestamp + 1 hours)
-        );
+        IAllowanceTransfer(PERMIT2)
+            .approve(
+                token,
+                address(POSITION_MANAGER),
+                uint160(poolSupply),
+                uint48(block.timestamp + 1 hours)
+            );
 
         bool token0IsLaunched = Currency.unwrap(poolKey.currency0) == token;
         uint256 n = cfg.tickLower.length;
