@@ -162,6 +162,42 @@ contract RailSwapMainnetFork is MainnetForkBase {
         assertEq(IERC20(wedge).balanceOf(buyer), 0, "buyer's wedge fully consumed");
     }
 
+    function test_rail_sell_token_for_wedge_after_buy_seeds_pool() public {
+        // The Rail starts with zero WEDGE (single-sided TOKEN seeding).
+        // A TOKEN → WEDGE swap can only succeed after at least one
+        // WEDGE → TOKEN buy has populated the pool's WEDGE side.
+        address wedge = _bootstrapWedge();
+        (address tokenAddress, PoolKey memory railKey) = _launchTokenWithRail(bytes32(uint256(3)));
+
+        // Step 1: buyer pumps WEDGE into Rail, gets TOKEN out.
+        uint256 wedgeIn = 1_000_000e18;
+        deal(wedge, buyer, wedgeIn);
+        vm.prank(buyer);
+        IERC20(wedge).approve(address(swapper), wedgeIn);
+        bool buyZeroForOne = Currency.unwrap(railKey.currency0) == wedge;
+        vm.prank(buyer);
+        swapper.swap(railKey, wedgeIn, buyZeroForOne, buyer, buyer);
+
+        uint256 tokenAcquired = IERC20(tokenAddress).balanceOf(buyer);
+        assertTrue(tokenAcquired > 0, "no token acquired in seed-buy");
+
+        // Step 2: a different seller sends some of THEIR TOKEN into Rail
+        // for WEDGE. (Deal a fresh TOKEN balance to a fresh seller so
+        // we're not double-counting the buyer.)
+        address seller = makeAddr("seller");
+        deal(tokenAddress, seller, tokenAcquired / 2);
+        vm.prank(seller);
+        IERC20(tokenAddress).approve(address(swapper), tokenAcquired / 2);
+
+        bool sellZeroForOne = Currency.unwrap(railKey.currency0) == tokenAddress;
+        uint256 sellerWedgeBefore = IERC20(wedge).balanceOf(seller);
+        vm.prank(seller);
+        swapper.swap(railKey, tokenAcquired / 2, sellZeroForOne, seller, seller);
+
+        uint256 sellerWedgeOut = IERC20(wedge).balanceOf(seller) - sellerWedgeBefore;
+        assertTrue(sellerWedgeOut > 0, "seller got no WEDGE back");
+    }
+
     function test_rail_collectFees_routes_to_treasury() public {
         address wedge = _bootstrapWedge();
         (address tokenAddress, PoolKey memory railKey) = _launchTokenWithRail(bytes32(uint256(2)));
