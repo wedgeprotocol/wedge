@@ -23,16 +23,20 @@ contract ConfigureAllowlists is Script {
         address mainlineHook = vm.envAddress("MAINLINE_HOOK");
         address mev = vm.envAddress("MEV_MODULE");
         address lpLocker = vm.envAddress("LP_LOCKER");
-        address railLocker = vm.envAddress("RAIL_LOCKER");
         address ext = vm.envAddress("RAIL_EXTENSION");
         address treasury = vm.envAddress("TEAM_FEE_RECIPIENT");
 
+        // Note: WedgeRailLocker is *not* allowlisted via setLocker. The
+        // Launchpad only knows about Mainline-style lockers (those that
+        // implement IWedgeLpLocker.placeLiquidity). The Rail locker
+        // receives positions via WedgeRailExtension.safeTransferFrom —
+        // its custody role is wired through the extension, which IS
+        // allowlisted via setExtension below.
         vm.startBroadcast();
         launchpad.setTeamFeeRecipient(treasury);
         launchpad.setHook(mainlineHook, true);
         launchpad.setMevModule(mev, true);
         launchpad.setLocker(lpLocker, mainlineHook, true);
-        launchpad.setLocker(railLocker, mainlineHook, true);
         launchpad.setExtension(ext, true);
         launchpad.setDeprecated(false);
         vm.stopBroadcast();
@@ -40,7 +44,6 @@ contract ConfigureAllowlists is Script {
         console2.log("Hook allowlisted     :", mainlineHook);
         console2.log("MEV module allowlisted:", mev);
         console2.log("LP locker allowlisted :", lpLocker);
-        console2.log("Rail locker allowlisted:", railLocker);
         console2.log("Rail ext allowlisted :", ext);
         console2.log("Treasury             :", treasury);
         console2.log("Launchpad un-deprecated. Ready to deployToken().");
