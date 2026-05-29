@@ -167,6 +167,44 @@ contract SwapMainnetFork is MainnetForkBase {
         assertTrue(tokenOutBase > 0, "buyer got no token post-decay");
     }
 
+    function test_sell_direction_token_for_weth_succeeds() public {
+        // Exercises the OTHER two hook cases:
+        //   isExactInput && !swappingForLaunched  → afterSwap delta
+        //   !isExactInput && swappingForLaunched  → afterSwap delta
+        //
+        // The buy cases (above) hit beforeSwap delta; sells hit afterSwap.
+        // If there's an amount0/1 flipping bug in afterSwap or a wrong
+        // sign on the unspecifiedDelta computation, only this test
+        // catches it.
+        (address tokenAddress, PoolKey memory key) = _launch(bytes32(uint256(0xCE11)));
+
+        // Step 1: buy some TOKEN first so the seller has inventory.
+        // Use post-decay window so we get more TOKEN per WETH and the
+        // sell has something material to work with.
+        vm.warp(block.timestamp + 121);
+        uint256 wethIn = 0.05 ether;
+        uint256 tokenAcquired = _buyTokenWithWeth(key, tokenAddress, wethIn);
+        assertTrue(tokenAcquired > 0, "buy step yielded no token");
+
+        // Step 2: sell a portion of the TOKEN back for WETH.
+        uint256 tokenIn = tokenAcquired / 2;
+        vm.prank(buyer);
+        IERC20(tokenAddress).approve(address(swapper), tokenIn);
+
+        bool tokenIsCurrency0 = tokenAddress < BaseMainnet.WETH;
+        bool zeroForOne = tokenIsCurrency0; // selling TOKEN means zeroForOne if TOKEN is c0
+        uint256 wethBalBefore = IERC20(BaseMainnet.WETH).balanceOf(buyer);
+        vm.prank(buyer);
+        swapper.swap(key, tokenIn, zeroForOne, buyer, buyer);
+
+        uint256 wethOut = IERC20(BaseMainnet.WETH).balanceOf(buyer) - wethBalBefore;
+        assertTrue(wethOut > 0, "sell yielded no weth");
+    }
+
+    function _launch(bytes32 salt) internal returns (address tokenAddress, PoolKey memory key) {
+        return _launchClassicMainline(salt);
+    }
+
     function test_swap_at_launch_vs_post_decay_buyer_gets_more_post_decay() public {
         // Same amountIn → buyer should get more TOKEN after decay because
         // the fee is lower. Launch two separate tokens with the same
