@@ -294,6 +294,7 @@ contract WedgeLpLocker is IWedgeLpLocker, IERC721Receiver, ReentrancyGuard {
 
     function onERC721Received(address, address, uint256 tokenId, bytes calldata)
         external
+        pure
         returns (bytes4)
     {
         // The PositionManager mints positions directly to address(this)
