@@ -261,6 +261,73 @@ contract WedgeLpLockerTest is Test {
         assertEq(params.length, 6);
     }
 
+    function test_placeLiquidity_encodes_ticks_flipped_for_token_is_currency1() public {
+        // Default setUp deploys token at an address > weth — confirm
+        // the orientation we're exercising before asserting.
+        assertTrue(address(token) > address(weth));
+
+        _place();
+        (, bytes[] memory params) = pm.decodeLastActions();
+
+        // First MINT_POSITION params: (poolKey, tickLower, tickUpper, ...)
+        (, int24 encodedLower, int24 encodedUpper,,,,,) = abi.decode(
+            params[0], (PoolKey, int24, int24, uint128, uint128, uint128, address, bytes)
+        );
+        // Band 1 of default config (as-currency-0 frame): lower=230_200,
+        // upper=237_200. With TOKEN as currency1 on the actual pool,
+        // ticks are negated and the pair swapped:
+        //   actualLower = -237_200, actualUpper = -230_200.
+        assertEq(encodedLower, int24(-237_200));
+        assertEq(encodedUpper, int24(-230_200));
+    }
+
+    function test_placeLiquidity_encodes_ticks_unflipped_for_token_is_currency0() public {
+        // Force the TOKEN < WETH orientation by re-deploying the token
+        // at a controlled address. We do this by deploying a fresh
+        // MockERC20 from a high-nonce account whose CREATE address
+        // happens to be > weth; then re-deploying it from a low-nonce
+        // account until the result is < weth.
+        address tokenDeployer = makeAddr("tokenDeployer");
+        MockERC20 lowToken;
+        for (uint64 nonce = 0; nonce < 20; nonce++) {
+            vm.setNonce(tokenDeployer, nonce);
+            vm.prank(tokenDeployer);
+            MockERC20 candidate = new MockERC20("Low", "LOW");
+            if (address(candidate) < address(weth)) {
+                lowToken = candidate;
+                break;
+            }
+        }
+        require(address(lowToken) != address(0), "could not find low-address token");
+        require(address(lowToken) < address(weth), "ordering invariant");
+
+        lowToken.mint(launchpad, SUPPLY);
+
+        // Build the pool key with lowToken as currency0.
+        PoolKey memory key = PoolKey({
+            currency0: Currency.wrap(address(lowToken)),
+            currency1: Currency.wrap(address(weth)),
+            fee: LPFeeLibrary.DYNAMIC_FEE_FLAG,
+            tickSpacing: TICK_SPACING,
+            hooks: IHooks(makeAddr("hook"))
+        });
+
+        vm.startPrank(launchpad);
+        IERC20(address(lowToken)).approve(address(locker), SUPPLY);
+        locker.placeLiquidity(
+            _defaultConfig(), key, STARTING_TICK, TICK_SPACING, SUPPLY, address(lowToken)
+        );
+        vm.stopPrank();
+
+        (, bytes[] memory params) = pm.decodeLastActions();
+        (, int24 encodedLower, int24 encodedUpper,,,,,) = abi.decode(
+            params[0], (PoolKey, int24, int24, uint128, uint128, uint128, address, bytes)
+        );
+        // When TOKEN < WETH, ticks pass through unflipped.
+        assertEq(encodedLower, int24(230_200));
+        assertEq(encodedUpper, int24(237_200));
+    }
+
     function test_placeLiquidity_records_rewards() public {
         _place();
         (address[] memory admins, address[] memory recipients, uint16[] memory bps) =

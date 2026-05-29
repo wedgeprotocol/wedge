@@ -127,8 +127,19 @@ contract WedgeLpLocker is IWedgeLpLocker, IERC721Receiver, ReentrancyGuard {
         bytes[] memory params = new bytes[](n + 1);
         for (uint256 i = 0; i < n; i++) {
             uint256 positionSupply = poolSupply * cfg.positionBps[i] / BPS;
-            uint160 sqrtPriceLower = TickMath.getSqrtPriceAtTick(cfg.tickLower[i]);
-            uint160 sqrtPriceUpper = TickMath.getSqrtPriceAtTick(cfg.tickUpper[i]);
+
+            // `cfg.tickLower/Upper[i]` are in the "TOKEN-as-currency0"
+            // frame (positive = TOKEN cheap in numeraire), matching the
+            // convention the Launchpad uses for `tickIfToken0IsLaunched`.
+            // When TOKEN is actually currency1 on the pool, the actual
+            // pool ticks are the negation of the as-currency-0 frame
+            // and `tickLower < tickUpper` requires swapping the pair.
+            (int24 actualLower, int24 actualUpper) = token0IsLaunched
+                ? (cfg.tickLower[i], cfg.tickUpper[i])
+                : (-cfg.tickUpper[i], -cfg.tickLower[i]);
+
+            uint160 sqrtPriceLower = TickMath.getSqrtPriceAtTick(actualLower);
+            uint160 sqrtPriceUpper = TickMath.getSqrtPriceAtTick(actualUpper);
 
             uint128 liquidity = token0IsLaunched
                 ? LiquidityAmounts.getLiquidityForAmount0(
@@ -141,8 +152,8 @@ contract WedgeLpLocker is IWedgeLpLocker, IERC721Receiver, ReentrancyGuard {
             actions[i] = bytes1(uint8(Actions.MINT_POSITION));
             params[i] = abi.encode(
                 poolKey,
-                cfg.tickLower[i],
-                cfg.tickUpper[i],
+                actualLower,
+                actualUpper,
                 liquidity,
                 token0IsLaunched ? uint128(positionSupply) : uint128(0),
                 token0IsLaunched ? uint128(0) : uint128(positionSupply),
