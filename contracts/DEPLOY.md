@@ -104,6 +104,31 @@ Launchpad can accept `deployToken` calls.
 This script must be run as the `Launchpad.owner()` (the address passed
 as `OWNER` in step 00).
 
+### 06 — Launch WEDGE + setProtocolToken (operational)
+
+```bash
+export TREASURY=...
+# Optional overrides:
+# export WEDGE_FDV_TICK=230200   # default = ~10 ETH FDV at 100B supply
+# export WEDGE_SALT=0x...        # default = keccak256("WEDGE-v1")
+forge script script/06_LaunchWedge.s.sol \
+  --rpc-url $BASE_RPC_URL --private-key $PRIVATE_KEY --broadcast
+```
+
+Launches WEDGE through the Launchpad using the Classic Mainline preset
+(no Rail), then calls `setProtocolToken(WEDGE)` so subsequent launches
+can include the Rail extension.
+
+- Must come **after** scripts 00–04 (Launchpad live, allowlists set).
+- May run **before or after** step 05. `setProtocolToken` is
+  owner-gated; if 05 has rotated ownership to a Safe, run this script
+  signed by the Safe.
+- **Dev-buy** is intentionally not part of this script — it depends on
+  treasury-side parameters that are best chosen at launch time.
+
+Outputs: WEDGE address. The Launchpad's `PROTOCOL_TOKEN()` now
+returns it; `setProtocolToken` cannot be called again.
+
 ### 05 — Transfer ownership to the Safe multisig
 
 ```bash
@@ -184,23 +209,18 @@ green "Contract" tab before declaring the deploy complete.
 | 03 | `03_DeployExtension.s.sol` | WedgeRailExtension + setExtension wiring |
 | 04 | `04_ConfigureAllowlists.s.sol` | Launchpad allowlists + treasury + un-deprecate |
 | 05 | `05_TransferOwnership.s.sol` | Launchpad owner → Safe multisig |
+| 06 | `06_LaunchWedge.s.sol` | Launches WEDGE + sets `PROTOCOL_TOKEN` |
 | verify | `forge verify-contract` per contract | Basescan source verification |
+
+(05 and 06 are interchangeable in order — both are one-shot. 06 must
+be signed by whoever currently holds `Launchpad.owner()`.)
 
 ## Post-deploy
 
-After step 04 the Launchpad is functional for `Classic Mainline`-style
-launches (no Rail), but `WedgeRailExtension` will revert until two
-further steps:
-
-1. **Launch WEDGE** through the Launchpad with no extension. This
-   creates the WEDGE/WETH Mainline pool.
-2. **Call `Launchpad.setProtocolToken(WEDGE_ADDRESS)`** — one-shot
-   setter, callable only by `Launchpad.owner()`. After this, the Rail
-   extension can be included in subsequent launches.
-
-These two steps are operational, not contract-deploy steps. They run
-once per protocol lifetime and are documented in the launch runbook
-(internal, not in this repo).
+After step 04 the Launchpad is functional for Classic Mainline
+launches (no Rail). After step 06 the Rail extension also unlocks.
+Steps 05 and 06 are independent — once both have run, the deployer
+EOA is no longer privileged anywhere in the system.
 
 ## Constants
 
@@ -213,5 +233,6 @@ are pinned at the time of writing but Uniswap may revise.
 
 - A combined "deploy everything in one tx" script — split into
   steps so each can be re-run independently when an env var is wrong.
-- WEDGE launch + `setProtocolToken` script — operational, written
-  closer to launch day with concrete FDV / dev-buy numbers.
+- WEDGE dev-buy script — depends on treasury-side parameters (target
+  supply %, max slippage, recipient) that are best chosen at launch
+  time. Add when those are decided.
