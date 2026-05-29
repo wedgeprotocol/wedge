@@ -16,6 +16,7 @@ import {WedgeLpLocker} from "../src/WedgeLpLocker.sol";
 import {IWedgeLpLocker} from "../src/interfaces/IWedgeLpLocker.sol";
 
 import {MockERC20} from "./mocks/MockERC20.sol";
+import {MockPermit2} from "./mocks/MockPermit2.sol";
 import {MockPositionManager} from "./mocks/MockPositionManager.sol";
 
 contract WedgeLpLockerTest is Test {
@@ -40,6 +41,12 @@ contract WedgeLpLockerTest is Test {
         otherRecipient = makeAddr("otherRecipient");
 
         weth = new MockERC20("Wrapped Ether", "WETH");
+
+        // Etch a no-op Permit2 stub at the canonical address so the
+        // locker's IAllowanceTransfer(PERMIT2).approve call doesn't
+        // revert on a non-contract address. Real semantics covered
+        // by fork tests.
+        vm.etch(address(0x000000000022D473030F116dDEE9F6B43aC78BA3), type(MockPermit2).runtimeCode);
 
         pm = new MockPositionManager();
         locker = new WedgeLpLocker(launchpad, address(pm));
