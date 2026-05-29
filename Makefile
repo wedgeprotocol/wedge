@@ -29,10 +29,10 @@ fork:
 	cd contracts && BASE_RPC_URL=$$BASE_RPC_URL forge test --match-contract MainnetFork -vvv
 
 fmt:
-	cd contracts && forge fmt
+	cd contracts && forge fmt src test script
 
 fmt-check:
-	cd contracts && forge fmt --check
+	cd contracts && forge fmt --check src test script
 
 snapshot:
 	cd contracts && forge snapshot
