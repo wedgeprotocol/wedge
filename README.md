@@ -5,9 +5,9 @@
 Wedge opens two Uniswap v4 pools per token in a single transaction:
 
 - **Mainline** — `TOKEN / WETH`, 1% LP fee. Primary discovery pair.
-- **Protocol Rail** — `TOKEN / WEDGE`, 0.30% LP fee. Lower-fee parallel pool.
+- **Wedge Rail** — `TOKEN / WEDGE`, 0.30% LP fee. Lower-fee parallel pool.
 
-The fee delta between Mainline and Protocol Rail is the *wedge* — the price gap that aggregators close by routing through the cheaper pool. Arbitrage flow through the Protocol Rail creates structural demand for the `WEDGE` token without taxing creators or removing the WETH pool.
+The fee delta between Mainline and Wedge Rail is the *wedge* — the price gap that aggregators close by routing through the cheaper pool. Arbitrage flow through the Wedge Rail creates structural demand for the `WEDGE` token without taxing creators or removing the WETH pool.
 
 LP positions are locked from deploy. Token contracts are intentionally boring on supply — total supply is fixed at construction, no inflation, no bridge mint, no minting authority of any kind after deploy. Admin-gated `updateImage` / `updateMetadata` / `updateAdmin` are available so creators can correct an image, hand off to a multisig, or update a description after launch. Creators who want maximum scanner trust opt in to `renounceAdmin()` at deploy, which permanently freezes the admin and metadata.
 

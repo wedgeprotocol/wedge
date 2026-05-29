@@ -117,7 +117,7 @@ contract Launchpad is OwnerAdmins, ReentrancyGuard {
     address public teamFeeRecipient;
 
     /// @notice The protocol token paired against every launch on the
-    ///         Protocol Rail. Set once by owner, after which it cannot
+    ///         Wedge Rail. Set once by owner, after which it cannot
     ///         be changed. Until set, extensions whose
     ///         `requiresProtocolToken()` returns true revert.
     address public PROTOCOL_TOKEN;
