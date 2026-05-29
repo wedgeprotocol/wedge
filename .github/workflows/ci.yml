@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC — weekly fork-test backstop
+  workflow_dispatch:
 
 jobs:
   forge:
@@ -37,9 +40,16 @@ jobs:
         run: forge test -vvv --no-match-contract MainnetFork
 
   mainnet-fork:
-    name: mainnet-fork (weekly)
+    name: mainnet-fork
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch')
+    # Runs on every push to main (catches v4-integration regressions
+    # immediately post-merge), on manual dispatch, and on schedule.
+    # Skipped on pull_request to keep Alchemy quota predictable —
+    # use workflow_dispatch on a specific PR to run it there.
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
     defaults:
       run:
         working-directory: contracts
